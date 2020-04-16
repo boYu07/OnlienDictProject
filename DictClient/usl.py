@@ -27,16 +27,17 @@
                 调用密码设置功能
             3. 注册成功进入二级界面
             4. 随时可以退出
-
 """
+from typing import Optional
 
-from bll import DictController
+from bll import RequestController
 
 
-class DictView:
+class DictClient:
 
     def __init__(self):
-        self.__controller = DictController()
+        self.__controller = None  # type: Optional[RequestController]
+        self.__username = ""
 
     def __main_menu(self):
         while True:
@@ -67,20 +68,21 @@ class DictView:
             username = input("输入用户名: ")
             if username == "quit":
                 return self.__main_menu()
-            data = "L U " + username
-            response = self.__controller.handle_request(data)
+            request = "L U " + username
+            response = self.__controller.handle_request(request)
             if not response[0]:
                 print(response[1])
                 continue
             password = input("输入密码: ")
             if password == "quit":
                 return self.__main_menu()
-            data = "L P " + password
-            response = self.__controller.handle_request(data)
+            request = "L P " + password
+            response = self.__controller.handle_request(request)
             if not response[0]:
                 print(response[1])
                 continue
             print("登录成功!")
+            self.__username = username
             return self.__sub_menu()
 
     def __sign_on_menu(self):
@@ -89,17 +91,18 @@ class DictView:
             username = input("输入用户名: ")
             if username == "quit":
                 return self.__main_menu()
-            data = "S U " + username
-            response = self.__controller.handle_request(data)
-            if not response:
+            request = "R U " + username
+            response = self.__controller.handle_request(request)
+            if not response[0]:
                 print(response[1])
                 continue
             password = input("输入密码: ")
             if password == "quit":
                 return self.__main_menu()
-            data = "S P " + password
-            response = self.__controller.handle_request(data)
+            request = "R P " + password
+            response = self.__controller.handle_request(request)
             print(response[1])
+            self.__username = username
             return self.__sub_menu()
 
     def __sub_menu(self):
@@ -109,21 +112,17 @@ class DictView:
             cmd = input(">>")
             if cmd == "sign out":
                 return self.__main_menu()
-            list_data = cmd.split(" ", 1)
-            if list_data[0] == "history":
-                data = "F H"
-                response = self.__controller.handle_request(data)
+            if "find" in cmd:
+                request = "F W " + cmd
+                response = self.__controller.handle_request(request)
                 print(response[1])
                 continue
-            elif list_data[0] == "find":
-                data = "F W " + cmd
-                response = self.__controller.handle_request(data)
-                if not response[0]:
-                    print(response[1])
-                    continue
+            if cmd == "history":
+                request = "F H " + self.__username
+                response = self.__controller.handle_request(request)
                 print(response[1])
-            else:
-                print(cmd, "无效命令")
+                continue
+            print(cmd, "无效命令")
 
     @staticmethod
     def __request_command():
@@ -143,16 +142,22 @@ class DictView:
         print("|   " + cmd_sign_out + "\t|   " + help_sign_out + "\t|")
         print("+---------------+-----------------------+")
 
+    def __quit(self):
+        self.__controller.handle_request("Q")
+
+    def connect(self, address):
+        self.__controller = RequestController(address)
+
     def main(self):
         try:
             self.__main_menu()
         except KeyboardInterrupt:
             return self.__quit()
 
-    def __quit(self):
-        self.__controller.handle_request("Q")
-
 
 if __name__ == '__main__':
-    v = DictView()
+    ADDRESS = ("localhost", 6489)
+
+    v = DictClient()
     v.main()
+    v.connect(ADDRESS)
