@@ -16,30 +16,40 @@
         登录界面:
             1. 输入用户名
             2. 输入密码
-                调用登录功能
-                    成功:进入二级界面
-                    失败:重新输入/返回一级界面/退出
+                成功:进入二级界面
+                失败:重新输入/返回一级界面/退出
         注册界面:
-            1. 填写用户名
-                调用设置用户名功能
-            2. 填写密码
-                二段密码校验
-                调用密码设置功能
-            3. 注册成功进入二级界面
-            4. 随时可以退出
+            1. 输入用户名
+            2. 输入密码
+                成功:进入二级界面
+                失败:重新输入/返回一级界面/退出
 """
+import sys
+from socket import *
 from typing import Optional
 
-from bll import RequestController
+from controller.find import FindC
+from controller.quit import QuitC
+from controller.sign_in import SignInC
+from controller.sign_on import SignOnC
 
 
 class DictClient:
 
     def __init__(self):
-        self.__controller = None  # type: Optional[RequestController]
+        self.__controller = None
         self.__username = ""
+        self.__c_socket = None  # type: Optional[socket]
 
     def __main_menu(self):
+        """
+            一级界面
+                1. 登录
+                    进入登录界面
+                2. 注册
+                    进入注册界面
+                3. 退出
+        """
         while True:
             print("===============欢迎==============")
             self.__main_help()
@@ -54,6 +64,9 @@ class DictClient:
 
     @staticmethod
     def __main_help():
+        """
+            一级界面命令帮助
+        """
         print("+---------------+---------------+")
         print("|   命令\t|   命令提示\t|")
         print("+---------------+---------------+")
@@ -63,69 +76,65 @@ class DictClient:
         print("+---------------+---------------+")
 
     def __sign_in_menu(self):
+        """
+            登录界面
+        """
         print("===============登录==============")
+        self.__controller = SignInC(self.__c_socket)
         while True:
-            username = input("输入用户名: ")
-            if username == "quit":
+            response = self.__controller.handle_request()
+            if response == 0:
                 return self.__main_menu()
-            request = "L U " + username
-            response = self.__controller.handle_request(request)
-            if not response[0]:
-                print(response[1])
+            if response == 1:
                 continue
-            password = input("输入密码: ")
-            if password == "quit":
-                return self.__main_menu()
-            request = "L P " + password
-            response = self.__controller.handle_request(request)
-            if not response[0]:
-                print(response[1])
-                continue
-            print("登录成功!")
-            self.__username = username
-            return self.__sub_menu()
+            if response == 2:
+                print("登录成功")
+                self.__username = self.__controller.get_username()
+                return self.__sub_menu()
 
     def __sign_on_menu(self):
+        """
+            注册界面
+        """
         print("===============注册==============")
+        self.__controller = SignOnC(self.__c_socket)
         while True:
-            username = input("输入用户名: ")
-            if username == "quit":
+            response = self.__controller.handle_request()
+            if response == 0:
                 return self.__main_menu()
-            request = "R U " + username
-            response = self.__controller.handle_request(request)
-            if not response[0]:
-                print(response[1])
+            if response == 1:
                 continue
-            password = input("输入密码: ")
-            if password == "quit":
-                return self.__main_menu()
-            request = "R P " + password
-            response = self.__controller.handle_request(request)
-            print(response[1])
-            self.__username = username
-            return self.__sub_menu()
+            if response == 2:
+                print("注册成功")
+                return self.__sub_menu()
 
     def __sub_menu(self):
+        """
+            二级界面
+                1. 查询单词
+                    调用查询功能,
+                2. 历史记录
+                    调用历史记录功能
+                3. 注销
+                    返回一级界面
+        """
         print("===============查询==============")
+        self.__controller = FindC(self.__c_socket, self.__username)
         while True:
-            self.__request_command()
-            cmd = input(">>")
-            if cmd == "sign out":
+            response = self.__controller.handle_request()
+            if response == 0:
                 return self.__main_menu()
-            if "find" in cmd:
-                request = "F W " + cmd
-                response = self.__controller.handle_request(request)
-                print(response[1])
+            if response == 1:
                 continue
-            if cmd == "history":
-                request = "F H " + self.__username
-                response = self.__controller.handle_request(request)
-                print(response[1])
-                continue
-            print(cmd, "无效命令")
+            if response == 2:
+                content = self.__controller.get_content()
+                print(content)
 
     @staticmethod
     def __request_command():
+        """
+            二级界面命令帮助
+        """
         title_cmd = "命令"
         title_help = "命令提示"
         cmd_find = "find 单词"
@@ -143,12 +152,26 @@ class DictClient:
         print("+---------------+-----------------------+")
 
     def __quit(self):
-        self.__controller.handle_request("Q")
+        """
+            退出程序
+        """
+        self.__controller = QuitC(self.__c_socket)
+        response = self.__controller.handle_request()
+        if response == 2:
+            sys.exit("客户端退出")
 
     def connect(self, address):
-        self.__controller = RequestController(address)
+        """
+            建立连接
+        :param address: 服务器地址
+        """
+        self.__c_socket = socket()
+        self.__c_socket.connect(address)
 
     def main(self):
+        """
+            启动服务
+        """
         try:
             self.__main_menu()
         except KeyboardInterrupt:
@@ -159,5 +182,6 @@ if __name__ == '__main__':
     ADDRESS = ("localhost", 6489)
 
     v = DictClient()
-    v.main()
+
     v.connect(ADDRESS)
+    v.main()
