@@ -15,7 +15,3 @@ class Request:
     @abstractmethod
     def do_request(self, request):
         pass
-
-    @abstractmethod
-    def send_response(self):
-        pass

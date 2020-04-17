@@ -8,9 +8,8 @@ from controller.abs_controller import Controller
 
 class FindC(Controller):
 
-    def __init__(self, c_socket: socket, username):
+    def __init__(self, c_socket: socket):
         super().__init__(c_socket)
-        self.__username = username
 
     def handle_request(self):
         """
@@ -28,7 +27,7 @@ class FindC(Controller):
         """
             发送并接收反馈
         :param request: 请求
-        :return: 收到回馈
+        :return: 反馈
         """
         self.c_socket.send(request.encode())
         response = self.c_socket.recv(1024)

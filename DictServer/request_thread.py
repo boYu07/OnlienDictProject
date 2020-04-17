@@ -5,6 +5,8 @@ import sys
 from socket import *
 from threading import Thread
 
+from request.find import FindR
+from request.history import HistoryR
 from request.sign_in import SignInR
 from request.sign_on import SignOnR
 
@@ -16,6 +18,8 @@ class RequestThread(Thread):
         self.__c_socket = c_socket
         self.__db = db
         self.__controller = None
+        self.__username = ""
+        self.__u_id = 0
 
     def __analyze_request(self):
         """
@@ -27,7 +31,7 @@ class RequestThread(Thread):
             print("已退出")
             self.__c_socket.close()
             sys.exit("已退出")
-        return request.decode().split(" ", 2)
+        return request.decode().split(" ", 1)
 
     def __handle_request(self):
         """
@@ -40,16 +44,22 @@ class RequestThread(Thread):
             if request_type == "L":
                 self.__controller = SignInR(self.__c_socket, self.__db)
                 self.__controller.do_request(list_request)
+                self.__username = self.__controller.get_username()
+                self.__u_id = self.__controller.get_u_id()
                 continue
             if request_type == "R":
                 self.__controller = SignOnR(self.__c_socket, self.__db)
                 self.__controller.do_request(list_request)
+                self.__username = self.__controller.get_username()
+                self.__u_id = self.__controller.get_u_id()
                 continue
             if request_type == "F":
-                self.__controller = FindR()
+                self.__controller = FindR(self.__c_socket, self.__db, self.__u_id)
+                self.__controller.do_request(list_request)
+                continue
             if request_type == "H":
-                # 历史请求
-                pass
+                self.__controller = HistoryR(self.__c_socket, self.__db, self.__u_id)
+                self.__controller.do_request()
                 continue
             print("未知请求", list_request)
 

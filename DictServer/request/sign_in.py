@@ -2,6 +2,7 @@
 
 """
 from socket import socket
+from typing import List
 
 from request.abs_request import Request
 
@@ -10,23 +11,23 @@ class SignInR(Request):
 
     def __init__(self, c_socket: socket, db):
         super().__init__(c_socket, db)
+        self.__username = ""
 
-    def do_request(self, request):
+    def do_request(self, request: List[str]):
         """
-
-        :param request:
-        :return:
+            处理请求
+        :param request: ["L", "username password"]
         """
-        username = request[1]
-        password = request[2]
+        username, password = request[1].split(" ")
         # 插入请求
-        response = self.select(username, password)
+        response = self.__is_available(username, password)
         if not response:
             self.c_socket.send(b"N")
             return
         self.c_socket.send(b"Y")
+        self.__username = username
 
-    def select(self, *args) -> bool:
+    def __is_available(self, *args) -> bool:
         """
             查询
         :return: 查到 True, 查询不到 False
@@ -37,3 +38,19 @@ class SignInR(Request):
         if self.cursor.fetchone():
             return True
         return False
+
+    def get_u_id(self) -> int:
+        """
+            获取u_id
+        :return: u_id
+        """
+        sql = "select id from user where username = %s"
+        self.cursor.execute(sql, (self.__username,))
+        return self.cursor.fetchone()[0]
+
+    def get_username(self) -> str:
+        """
+            获取用户名
+        :return: 用户名
+        """
+        return self.__username

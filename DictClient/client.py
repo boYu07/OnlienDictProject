@@ -129,10 +129,10 @@ class DictClient:
             if cmd == "sign out":
                 return self.__main_menu()
             if cmd == "find":
-                self.__controller = FindC(self.__c_socket, self.__username)
+                self.__controller = FindC(self.__c_socket)
                 self.__controller.handle_request()
             if cmd == "history":
-                self.__controller = HistoryC(self.__c_socket, self.__username)
+                self.__controller = HistoryC(self.__c_socket)
                 self.__controller.handle_request()
 
     @staticmethod
