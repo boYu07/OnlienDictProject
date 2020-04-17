@@ -18,21 +18,20 @@ class SignOnC(Controller):
         :return: 0: 退出, 1: 失败, 2: 成功
         """
         username = input("输入用户名: ")
-        if username == "quit":
+        if not username:
             return 0
-        request = "R U " + username
+        password = input("输入密码: ")
+        if not password:
+            return 0
+        if " " in username or " " in password:
+            print("不能有空格")
+            return 1
+
+        request = "R %s %s" % (username, password)
         response = self.send_request(request)
         if response == "N":
             return 1
         self.__username = username
-        password = input("输入密码: ")
-        if password == "quit":
-            return 0
-        request = "R P " + password
-        response = self.send_request(request)
-        if response == "N":
-            return 1
-
         return 2
 
     def send_request(self, request: str) -> str:

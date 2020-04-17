@@ -1,3 +1,6 @@
 .idea/
 DictClient/__pycache__/
 DictServer/__pycache__/
+DictClient/controller/__pycache__/
+DictServer/request/__pycache__/
+

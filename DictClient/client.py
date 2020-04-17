@@ -29,6 +29,7 @@ from socket import *
 from typing import Optional
 
 from controller.find import FindC
+from controller.history import HistoryC
 from controller.quit import QuitC
 from controller.sign_in import SignInC
 from controller.sign_on import SignOnC
@@ -50,6 +51,7 @@ class DictClient:
                     进入注册界面
                 3. 退出
         """
+        self.__username = ""
         while True:
             print("===============欢迎==============")
             self.__main_help()
@@ -83,9 +85,10 @@ class DictClient:
         self.__controller = SignInC(self.__c_socket)
         while True:
             response = self.__controller.handle_request()
-            if response == 0:
+            if not response:
                 return self.__main_menu()
             if response == 1:
+                print("登录失败")
                 continue
             if response == 2:
                 print("登录成功")
@@ -100,9 +103,10 @@ class DictClient:
         self.__controller = SignOnC(self.__c_socket)
         while True:
             response = self.__controller.handle_request()
-            if response == 0:
+            if not response:
                 return self.__main_menu()
             if response == 1:
+                print("注册失败")
                 continue
             if response == 2:
                 print("注册成功")
@@ -119,16 +123,17 @@ class DictClient:
                     返回一级界面
         """
         print("===============查询==============")
-        self.__controller = FindC(self.__c_socket, self.__username)
+        self.__request_command()
         while True:
-            response = self.__controller.handle_request()
-            if response == 0:
+            cmd = input(">>")
+            if cmd == "sign out":
                 return self.__main_menu()
-            if response == 1:
-                continue
-            if response == 2:
-                content = self.__controller.get_content()
-                print(content)
+            if cmd == "find":
+                self.__controller = FindC(self.__c_socket, self.__username)
+                self.__controller.handle_request()
+            if cmd == "history":
+                self.__controller = HistoryC(self.__c_socket, self.__username)
+                self.__controller.handle_request()
 
     @staticmethod
     def __request_command():
@@ -137,10 +142,10 @@ class DictClient:
         """
         title_cmd = "命令"
         title_help = "命令提示"
-        cmd_find = "find 单词"
+        cmd_find = "find"
         cmd_history = "history"
         cmd_sign_out = "sign out"
-        help_find = "查询单词解释"
+        help_find = "进入查询单词"
         help_history = "查看查询历史"
         help_sign_out = "返回最初界面"
         print("+---------------+-----------------------+")

@@ -1,14 +1,25 @@
 """
     添加信息
 """
-from request.request import Request
+from typing import List
 
 
-class Insert(Request):
+class Insert:
 
-    def __init__(self, database):
-        super().__init__(database)
+    def __init__(self, cursor, db):
+        self.__db = db
+        self.__cursor = cursor
 
-    def do_request(self, field: str, table: str, data: str, request: str):
-        pass
-
+    def insert(self, data: List[str], table="", field=""):
+        print(data)
+        # sql = "insert into user (username, password) value (request);"
+        sql = "insert into %s (%s) value " % (table, field)
+        sql += "(%s);"
+        print(sql)
+        try:
+            self.__cursor.execute(sql, data)
+            self.__db.commit()
+            return True
+        except Exception:
+            self.__db.rollback()
+            return False

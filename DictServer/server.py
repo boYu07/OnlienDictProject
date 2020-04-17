@@ -2,6 +2,7 @@
     服务端:
         目的可通过这个类快速的搭建起在线字典的服务端
 """
+import sys
 from socket import *
 from typing import Optional
 
@@ -16,11 +17,10 @@ class DictServer:
         self.__host = host
         self.__port = port
 
-        self.__database = None  # type: Optional[pymysql]
+        self.__db = None
         self.__s_socket = None  # type: Optional[socket]
 
         self.__init_socket()
-        self.__socket_bind()
 
     @property
     def host(self):
@@ -42,14 +42,10 @@ class DictServer:
             初始化tcp套接字并设置成监听套接字
         """
         self.__s_socket = socket()
-        self.__s_socket.listen(10)
-
-    def __socket_bind(self):
-        """
-            绑定服务器地址
-        """
         address = (self.__host, self.__port)
         self.__s_socket.bind(address)
+        self.__s_socket.listen(10)
+        print("Listen to Port:", self.__port)
 
     def set_database(self, *, host: str, port=3306, user: str, password: str, database: str, charset="utf8"):
         """
@@ -61,22 +57,29 @@ class DictServer:
         :param database: 数据库名
         :param charset: 编码
         """
-        self.__database = pymysql.connect(host=host,
-                                          port=port,
-                                          user=user,
-                                          password=password,
-                                          database=database,
-                                          charset=charset)
+        self.__db = pymysql.connect(host=host,
+                                    port=port,
+                                    user=user,
+                                    password=password,
+                                    database=database,
+                                    charset=charset)
 
     def start(self):
         """
             启动服务
         """
-        c_socket, c_address = self.__s_socket.accept()
-        print(c_address, "已登录")
-        request_thread = RequestThread(c_socket, self.__database)
-        request_thread.setDaemon(True)
-        request_thread.start()
+        while True:
+            try:
+                c_socket, c_address = self.__s_socket.accept()
+            except KeyboardInterrupt:
+                self.__s_socket.close()
+                self.__db.cursor().close()
+                self.__db.close()
+                sys.exit("服务器退出")
+            print(c_address, "已登录")  # debug
+            request_thread = RequestThread(c_socket, self.__db)
+            request_thread.setDaemon(True)
+            request_thread.start()
 
 
 # --------------------测试------------------------
@@ -85,10 +88,10 @@ if __name__ == '__main__':
     PORT = 6489
 
     s = DictServer(host=HOST, port=PORT)
-    s.start()
     s.set_database(host="localhost",
                    port=3306,
                    user="test",
                    password="123",
                    database="online_dict",
                    charset="utf8")
+    s.start()
