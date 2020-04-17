@@ -46,7 +46,10 @@ class SignInR(Request):
         """
         sql = "select id from user where username = %s"
         self.cursor.execute(sql, (self.__username,))
-        return self.cursor.fetchone()[0]
+        data = self.cursor.fetchone()
+        if data:
+            return data[0]
+        return -1
 
     def get_username(self) -> str:
         """
